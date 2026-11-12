@@ -55,9 +55,48 @@ public sealed class ServiceBusLoanEventPublisher : ILoanEventPublisher, IAsyncDi
     //   * Batches are IDisposable.
     // The test sends 3,000 events (more than one batch) and checks all 3,000 arrive exactly once.
     // =====================================================================
-    public Task<int> PublishBatchAsync<TEvent>(IReadOnlyList<TEvent> events, CancellationToken ct = default) where TEvent : LoanEvent
+    public async Task<int> PublishBatchAsync<TEvent>(IReadOnlyList<TEvent> events, CancellationToken ct = default) where TEvent : LoanEvent
     {
-        throw new NotImplementedException("Exercise 5");
+
+        if (events.Count == 0) return 0;
+        int batchSent = 0;
+        ServiceBusMessageBatch batch = await _sender.CreateMessageBatchAsync(ct);
+        try
+        {
+            foreach (TEvent evt in events)
+            {
+                ServiceBusMessage message = new ServiceBusMessage(BinaryData.FromObjectAsJson(evt, MessagingJson.Options))
+                {
+                    Subject = evt.GetType().ToString(),
+                    ContentType = "application/json",
+                    MessageId = evt.EventId.ToString(),
+                    CorrelationId = evt.LoanId.ToString()
+                };
+                if (batch.TryAddMessage(message)) continue;
+                if (batch.Count == 0)
+                {
+                    throw new InvalidOperationException(
+                        $"Event {evt.EventId} is too large to fit in a batch on its own.");
+                }
+                await _sender.SendMessagesAsync(batch, ct);
+                batchSent++;
+                batch.Dispose();
+                batch = await _sender.CreateMessageBatchAsync(ct);
+            }
+            if (batch.Count > 0)
+            {
+                await _sender.SendMessagesAsync(batch, ct);
+                batchSent++;
+                return batchSent;
+            }
+        }
+        finally
+        {
+            batch.Dispose();
+        }
+
+        return batchSent;
+
     }
 
     public ValueTask DisposeAsync()
