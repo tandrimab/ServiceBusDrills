@@ -55,7 +55,7 @@ public sealed class LoanEventsProcessor : IHostedService, IAsyncDisposable
     // Then implement ServiceBusDeadLetterInspector.
     // =====================================================================
 
-    public Task StartAsync(CancellationToken cancellationToken)
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
         ServiceBusProcessorOptions options = new ServiceBusProcessorOptions();
         options.AutoCompleteMessages = false;
@@ -63,7 +63,9 @@ public sealed class LoanEventsProcessor : IHostedService, IAsyncDisposable
         _processor = _client.CreateProcessor(EntityNames.LoanEventsQueue, options);
         Func<ProcessMessageEventArgs, Task> messageHandler = new Func<ProcessMessageEventArgs, Task>(MesssageHandler);
         Func<ProcessErrorEventArgs, Task> errorHandler = new Func<ProcessErrorEventArgs, Task>(ErrorHandler);
-        return _processor.StartProcessingAsync(cancellationToken);
+        _processor.ProcessMessageAsync += messageHandler;
+        _processor.ProcessErrorAsync += errorHandler;
+        await _processor.StartProcessingAsync(cancellationToken);
     }
 
     private async Task MesssageHandler(ProcessMessageEventArgs processMessageEventArgs)
@@ -71,26 +73,63 @@ public sealed class LoanEventsProcessor : IHostedService, IAsyncDisposable
         ServiceBusReceivedMessage message = processMessageEventArgs.Message;
         CancellationToken ct = processMessageEventArgs.CancellationToken;
         var type = LoanEventTypes.Resolve(message.Subject);
-        var body = (LoanEvent?)JsonSerializer.Deserialize(message.Body.ToMemory().Span,
-        type,
-        MessagingJson.Options
-        );
-
-        await _handler.HandleAsync(body, ct);
+        if (type is null)
+        {
+            await DeadLetterHandler(processMessageEventArgs, DeadLetterReasons.UnknownEventType,
+                $"No event type registered for subject '{message.Subject}'", ct);
+            return;
+        }
+        LoanEvent? body;
+        try
+        {
+            body = (LoanEvent?)JsonSerializer.Deserialize(message.Body.ToMemory().Span, type, MessagingJson.Options);
+        }
+        catch (JsonException ex)
+        {
+            body = null;
+            _logger.LogWarning(ex, "Could not deserialize message {MessageId}", message.MessageId);
+        }
+        if (body is null)
+        {
+            await DeadLetterHandler(processMessageEventArgs, DeadLetterReasons.DeserializationFailed,
+                $"Body is not valid JSON for {type.Name}", ct);
+            return;
+        }
+        try
+        {
+            await _handler.HandleAsync(body, ct);
+        }
+        catch (PoisonMessageException ex)
+        {
+            _logger.LogError(ex, "Poison message {MessageId}", message.MessageId);
+            await DeadLetterHandler(processMessageEventArgs, DeadLetterReasons.PoisonMessage, ex.Message, ct);
+            return;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Transient failure on message {MessageId} (attempt {DeliveryCount})",
+                message.MessageId, message.DeliveryCount);
+            await processMessageEventArgs.AbandonMessageAsync(message, cancellationToken: ct);
+            return;
+        }
         await processMessageEventArgs.CompleteMessageAsync(message, ct);
     }
 
-    private Task ErrorHandler(ProcessErrorEventArgs processErrorEventArgs)
+    private static Task DeadLetterHandler(ProcessMessageEventArgs args, string reason, string description, CancellationToken ct) =>
+        args.DeadLetterMessageAsync(args.Message, reason, description, ct);
+
+    private Task ErrorHandler(ProcessErrorEventArgs args)
     {
-        string text = string.Format($"{0}: {1}", processErrorEventArgs.ErrorSource, processErrorEventArgs.Exception.Message);
-        Console.WriteLine(text);
+        _logger.LogError(args.Exception, "Service Bus error from {ErrorSource} on {EntityPath}",
+            args.ErrorSource, args.EntityPath);
         return Task.CompletedTask;
     }
 
-    public Task StopAsync(CancellationToken cancellationToken)
+    public async Task StopAsync(CancellationToken cancellationToken)
     {
-        _processor.StopProcessingAsync(cancellationToken);
-        return Task.CompletedTask;
+        if (_processor is null) return;
+        await _processor.StopProcessingAsync(cancellationToken);
+        await _processor.DisposeAsync();
     }
 
     public async ValueTask DisposeAsync()
