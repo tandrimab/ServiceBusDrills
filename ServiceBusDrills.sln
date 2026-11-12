@@ -1,0 +1,56 @@
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{F88EDFB2-5817-46D1-9EE0-F7FB9FCEBA2C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookLending.Messaging.Api", "src\BookLending.Messaging.Api\BookLending.Messaging.Api.csproj", "{7C77D385-8DD7-48F8-B2D9-79659D974339}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookLending.Messaging.Application", "src\BookLending.Messaging.Application\BookLending.Messaging.Application.csproj", "{8D949041-279F-4BE2-AEC6-DD0791C545B9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookLending.Messaging.Domain", "src\BookLending.Messaging.Domain\BookLending.Messaging.Domain.csproj", "{D0A4F02B-76A2-4EA3-B654-A5F0497093AE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookLending.Messaging.Infrastructure", "src\BookLending.Messaging.Infrastructure\BookLending.Messaging.Infrastructure.csproj", "{C81FE9BE-37C8-4E54-A2D9-CFF95A8E5283}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{81ED1AB1-C496-4BE0-BB8D-00E3EE348B28}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookLending.Messaging.Tests", "tests\BookLending.Messaging.Tests\BookLending.Messaging.Tests.csproj", "{C135D19A-1720-4183-AB3B-C0BC045B3B89}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7C77D385-8DD7-48F8-B2D9-79659D974339}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C77D385-8DD7-48F8-B2D9-79659D974339}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C77D385-8DD7-48F8-B2D9-79659D974339}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C77D385-8DD7-48F8-B2D9-79659D974339}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D949041-279F-4BE2-AEC6-DD0791C545B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D949041-279F-4BE2-AEC6-DD0791C545B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D949041-279F-4BE2-AEC6-DD0791C545B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D949041-279F-4BE2-AEC6-DD0791C545B9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D0A4F02B-76A2-4EA3-B654-A5F0497093AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D0A4F02B-76A2-4EA3-B654-A5F0497093AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D0A4F02B-76A2-4EA3-B654-A5F0497093AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D0A4F02B-76A2-4EA3-B654-A5F0497093AE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C81FE9BE-37C8-4E54-A2D9-CFF95A8E5283}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C81FE9BE-37C8-4E54-A2D9-CFF95A8E5283}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C81FE9BE-37C8-4E54-A2D9-CFF95A8E5283}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C81FE9BE-37C8-4E54-A2D9-CFF95A8E5283}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C135D19A-1720-4183-AB3B-C0BC045B3B89}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C135D19A-1720-4183-AB3B-C0BC045B3B89}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C135D19A-1720-4183-AB3B-C0BC045B3B89}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C135D19A-1720-4183-AB3B-C0BC045B3B89}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7C77D385-8DD7-48F8-B2D9-79659D974339} = {F88EDFB2-5817-46D1-9EE0-F7FB9FCEBA2C}
+		{8D949041-279F-4BE2-AEC6-DD0791C545B9} = {F88EDFB2-5817-46D1-9EE0-F7FB9FCEBA2C}
+		{D0A4F02B-76A2-4EA3-B654-A5F0497093AE} = {F88EDFB2-5817-46D1-9EE0-F7FB9FCEBA2C}
+		{C81FE9BE-37C8-4E54-A2D9-CFF95A8E5283} = {F88EDFB2-5817-46D1-9EE0-F7FB9FCEBA2C}
+		{C135D19A-1720-4183-AB3B-C0BC045B3B89} = {81ED1AB1-C496-4BE0-BB8D-00E3EE348B28}
+	EndGlobalSection
+EndGlobal
