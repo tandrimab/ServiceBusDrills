@@ -89,7 +89,8 @@ public sealed class LoanEventsProcessor : IHostedService, IAsyncDisposable
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        throw new NotImplementedException("Exercise 2");
+        _processor.StopProcessingAsync(cancellationToken);
+        return Task.CompletedTask;
     }
 
     public async ValueTask DisposeAsync()
