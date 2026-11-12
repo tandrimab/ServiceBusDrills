@@ -1,0 +1,39 @@
+# Local Azure Service Bus emulator (official Microsoft images) + its SQL backing store.
+# Based on https://github.com/Azure/azure-service-bus-emulator-installer
+# Values come from .env in this folder.
+name: servicebus-drills
+services:
+  emulator:
+    container_name: "servicebus-emulator"
+    image: mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
+    pull_policy: always
+    volumes:
+      - "./emulator/Config.json:/ServiceBus_Emulator/ConfigFiles/Config.json"
+    ports:
+      - "5672:5672"   # AMQP (what the SDK talks to)
+      - "5300:5300"   # health check + management API
+    environment:
+      SQL_SERVER: sqledge
+      MSSQL_SA_PASSWORD: "${SQL_PASSWORD}"
+      ACCEPT_EULA: "${ACCEPT_EULA}"
+      SQL_WAIT_INTERVAL: "${SQL_WAIT_INTERVAL:-15}"
+      EMULATOR_HTTP_PORT: 5300
+    depends_on:
+      - sqledge
+    networks:
+      sb-emulator:
+        aliases:
+          - "sb-emulator"
+  sqledge:
+    container_name: "sqledge"
+    image: "mcr.microsoft.com/azure-sql-edge:latest"
+    environment:
+      ACCEPT_EULA: "${ACCEPT_EULA}"
+      MSSQL_SA_PASSWORD: "${SQL_PASSWORD}"
+    networks:
+      sb-emulator:
+        aliases:
+          - "sqledge"
+
+networks:
+  sb-emulator:
