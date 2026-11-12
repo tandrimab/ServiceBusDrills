@@ -4,6 +4,7 @@ using BookLending.Messaging.Application.Messaging;
 using BookLending.Messaging.Domain.Events;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace BookLending.Messaging.Infrastructure.ServiceBus;
 
@@ -56,7 +57,34 @@ public sealed class LoanEventsProcessor : IHostedService, IAsyncDisposable
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        throw new NotImplementedException("Exercise 2");
+        ServiceBusProcessorOptions options = new ServiceBusProcessorOptions();
+        options.AutoCompleteMessages = false;
+        options.MaxConcurrentCalls = 1;
+        _processor = _client.CreateProcessor(EntityNames.LoanEventsQueue, options);
+        Func<ProcessMessageEventArgs, Task> messageHandler = new Func<ProcessMessageEventArgs, Task>(MesssageHandler);
+        Func<ProcessErrorEventArgs, Task> errorHandler = new Func<ProcessErrorEventArgs, Task>(ErrorHandler);
+        return _processor.StartProcessingAsync(cancellationToken);
+    }
+
+    private async Task MesssageHandler(ProcessMessageEventArgs processMessageEventArgs)
+    {
+        ServiceBusReceivedMessage message = processMessageEventArgs.Message;
+        CancellationToken ct = processMessageEventArgs.CancellationToken;
+        var type = LoanEventTypes.Resolve(message.Subject);
+        var body = (LoanEvent?)JsonSerializer.Deserialize(message.Body.ToMemory().Span,
+        type,
+        MessagingJson.Options
+        );
+
+        await _handler.HandleAsync(body, ct);
+        await processMessageEventArgs.CompleteMessageAsync(message, ct);
+    }
+
+    private Task ErrorHandler(ProcessErrorEventArgs processErrorEventArgs)
+    {
+        string text = string.Format($"{0}: {1}", processErrorEventArgs.ErrorSource, processErrorEventArgs.Exception.Message);
+        Console.WriteLine(text);
+        return Task.CompletedTask;
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
