@@ -33,7 +33,7 @@ public sealed class ServiceBusLoanEventPublisher : ILoanEventPublisher, IAsyncDi
     // =====================================================================
     public Task PublishAsync<TEvent>(TEvent evt, CancellationToken ct = default) where TEvent : LoanEvent
     {
-        var message = new ServiceBusMessage(BinaryData.FromObjectAsJson(evt))
+        var message = new ServiceBusMessage(BinaryData.FromObjectAsJson(evt, MessagingJson.Options))
         {
             Subject = LoanEventTypes.NameOf(evt),
             ContentType = "application/json",

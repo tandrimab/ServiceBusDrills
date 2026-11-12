@@ -2,16 +2,17 @@ using Azure.Messaging.ServiceBus;
 using BookLending.Messaging.Application.Abstractions;
 using BookLending.Messaging.Application.Messaging;
 using BookLending.Messaging.Domain.Events;
+using Microsoft.Azure.Amqp.Framing;
 
 namespace BookLending.Messaging.Infrastructure.ServiceBus;
 
 public sealed class ServiceBusBookEventBroadcaster : IBookEventBroadcaster, IAsyncDisposable
 {
-    private readonly ServiceBusClient _client;
+    private ServiceBusSender _sender;
 
     public ServiceBusBookEventBroadcaster(ServiceBusClient client)
     {
-        _client = client;
+        _sender = client.CreateSender(EntityNames.BookEventsTopic);
     }
 
     // =====================================================================
@@ -32,13 +33,23 @@ public sealed class ServiceBusBookEventBroadcaster : IBookEventBroadcaster, IAsy
     // Then answer in a comment at the bottom of this file: why is a topic better here than
     // three separate queues the publisher sends to?
     // =====================================================================
-    public Task BroadcastReturnedAsync(BookReturned evt, CancellationToken ct = default)
+    public async Task BroadcastReturnedAsync(BookReturned evt, CancellationToken ct = default)
     {
-        throw new NotImplementedException("Exercise 4");
+        ServiceBusMessage message = new ServiceBusMessage(BinaryData.FromObjectAsJson(evt, MessagingJson.Options))
+        {
+            Subject = evt.GetType().ToString(),
+            ContentType = "application/json",
+            MessageId = evt.EventId.ToString(),
+            CorrelationId = evt.LoanId.ToString()
+        };
+        message.ApplicationProperties["category"] = evt.Category;
+        message.ApplicationProperties["daysOverdue"] = evt.DaysOverdue;
+        await _sender.SendMessageAsync(message, ct);
+
     }
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }
 
 // Your answer:
-//
+// The same message needs to be created for each consumer, which means 3 queues. Instead, in case of topic a copy of the message will be published to all consumers who subscribe for that and the filters will be applied.
