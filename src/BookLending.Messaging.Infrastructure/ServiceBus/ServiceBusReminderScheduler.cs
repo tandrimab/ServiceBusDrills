@@ -2,16 +2,18 @@ using Azure.Messaging.ServiceBus;
 using BookLending.Messaging.Application.Abstractions;
 using BookLending.Messaging.Application.Messaging;
 using BookLending.Messaging.Domain.Events;
+using Microsoft.Azure.Amqp;
 
 namespace BookLending.Messaging.Infrastructure.ServiceBus;
 
 public sealed class ServiceBusReminderScheduler : IReminderScheduler, IAsyncDisposable
 {
-    private readonly ServiceBusClient _client;
+    private ServiceBusSender _sender;
 
     public ServiceBusReminderScheduler(ServiceBusClient client)
     {
-        _client = client;
+        _sender = client.CreateSender(EntityNames.DueRemindersQueue);
+
     }
 
     // =====================================================================
@@ -26,14 +28,21 @@ public sealed class ServiceBusReminderScheduler : IReminderScheduler, IAsyncDisp
     //
     // Think about: there are two ways to schedule. Which one gives you something to cancel with?
     // =====================================================================
-    public Task<long> ScheduleAsync(DueDateReminder reminder, DateTimeOffset deliverAt, CancellationToken ct = default)
+    public async Task<long> ScheduleAsync(DueDateReminder reminder, DateTimeOffset deliverAt, CancellationToken ct = default)
     {
-        throw new NotImplementedException("Exercise 6");
+        ServiceBusMessage message = new ServiceBusMessage(BinaryData.FromObjectAsJson(reminder, MessagingJson.Options))
+        {
+            Subject = reminder.GetType().ToString(),
+            ContentType = "application/json",
+            MessageId = reminder.MemberId.ToString(),
+            CorrelationId = reminder.LoanId.ToString()
+        };
+        return await _sender.ScheduleMessageAsync(message, deliverAt, ct);
     }
 
-    public Task CancelAsync(long sequenceNumber, CancellationToken ct = default)
+    public async Task CancelAsync(long sequenceNumber, CancellationToken ct = default)
     {
-        throw new NotImplementedException("Exercise 6");
+        await _sender.CancelScheduledMessageAsync(sequenceNumber, ct);
     }
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
